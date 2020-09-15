@@ -5,6 +5,13 @@ import os
 def load_data(window_length, state='Massachusetts'):
 	"""
 	Loads the nytimes covid data and filters on the required state and window length.
+	
+	Args:
+	window_length (int) - the number of days of historical data to keep
+	state (string - default 'Massachusetts') - the state to get data for
+	
+	Returns:
+	(pd dataframe) covid case data 
 	"""
 	covid_data = pd.read_csv('https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv')
 	covid_data['date'] = pd.to_datetime(covid_data['date'])
@@ -17,6 +24,12 @@ def load_data(window_length, state='Massachusetts'):
 def get_moving_average(data):
 	"""
 	Calculates the moving average of covid cases.
+	
+	Args:
+	data (pd dataframe) - daily covid case data
+	
+	Returns:
+	(int) the average new daily cases
 	"""
 	data['yesterday_cases'] = data['cases'].shift()
 	data['new_cases'] = data['cases'] - data['yesterday_cases']
@@ -24,7 +37,13 @@ def get_moving_average(data):
 	
 def send_email(window_length, state_average, county_average, recipient_email):
 	"""
-	Sends an email summarizing covid cases.
+	Sends an email summarizing new daily covid cases.
+	
+	Args:
+	window_length (int) - the number of days considered in the moving average
+	state_average (int) - the average daily number of new cases as the state level
+	county_average (int) - the average daily number of new cases as the county level
+	recipient_email (string) - the email address to send the summary to
 	"""
 	sending_address = 'covid.emails20@gmail.com'
 	password = os.environ['email_password']
@@ -43,7 +62,8 @@ def send_email(window_length, state_average, county_average, recipient_email):
 	
 def lambda_handler(event, context):
 	"""
-	Acts as the main for aws lambda.
+	Acts as the main for aws lambda. Loads covid data, processes it and emails out a
+	summary.
 	"""
     window_length = 7
     covid_data = load_data(window_length)
