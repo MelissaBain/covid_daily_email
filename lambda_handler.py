@@ -3,6 +3,9 @@ import smtplib
 import os
 
 def load_data(window_length, state='Massachusetts'):
+	"""
+	Loads the nytimes covid data and filters on the required state and window length.
+	"""
 	covid_data = pd.read_csv('https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv')
 	covid_data['date'] = pd.to_datetime(covid_data['date'])
 	covid_data.sort_values('date', inplace=True)
@@ -12,11 +15,17 @@ def load_data(window_length, state='Massachusetts'):
 	return state_data
 	
 def get_moving_average(data):
+	"""
+	Calculates the moving average of covid cases.
+	"""
 	data['yesterday_cases'] = data['cases'].shift()
 	data['new_cases'] = data['cases'] - data['yesterday_cases']
 	return round(data['new_cases'].mean())
 	
-def send_email(window_length, state_average, county_average, email):
+def send_email(window_length, state_average, county_average, recipient_email):
+	"""
+	Sends an email summarizing covid cases.
+	"""
 	sending_address = 'covid.emails20@gmail.com'
 	password = os.environ['email_password']
 	server = smtplib.SMTP('smtp.gmail.com', 587)
@@ -29,11 +38,13 @@ def send_email(window_length, state_average, county_average, email):
 	body = "Over the past {} days the average county cases were {} and the average state cases were {}.".\
 				format(window_length, county_average, state_average)
 	email_text = 'Subject: {}\n\n{}'.format(subject, body)
-	server.sendmail(sending_address, email, email_text)
+	server.sendmail(sending_address, recipient_email, email_text)
 	server.close()
 	
-	
 def lambda_handler(event, context):
+	"""
+	Acts as the main for aws lambda.
+	"""
     window_length = 7
     covid_data = load_data(window_length)
     statewide_data = covid_data.groupby('date')['cases'].sum().reset_index()
